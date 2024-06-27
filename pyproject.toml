@@ -4,6 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["Nikki Satmaka <30800020+NikkiSatmaka@users.noreply.github.com>"]
 readme = "README.md"
+packages = [
+    {include = "google_ads", from = "src"},
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
