@@ -1,0 +1,3 @@
+[submodule "src/tiktok-business-api-sdk"]
+	path = src/tiktok-business-api-sdk
+	url = https://github.com/tiktok/tiktok-business-api-sdk.git
