@@ -60,6 +60,7 @@ def get_report_campaign(advertiser_id, start_date, end_date) -> pd.DataFrame:
         "advertiser_id",
         "advertiser_name",
         "campaign_name",
+        "objective_type",
         "reach",
         "impressions",
         "clicks",
@@ -115,7 +116,7 @@ def get_report_campaign(advertiser_id, start_date, end_date) -> pd.DataFrame:
         )
         df = df[dimensions + metrics]
         df["stat_time_day"] = pd.to_datetime(df["stat_time_day"])
-        df[metrics[3:]] = df[metrics[3:]].apply(pd.to_numeric, errors="coerce")
+        df[metrics[4:]] = df[metrics[4:]].apply(pd.to_numeric, errors="coerce")
         df = df[df["impressions"] > 0].reset_index(drop=True)
     return df
 
