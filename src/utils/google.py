@@ -18,7 +18,7 @@ load_dotenv()
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 
 
-def get_manager_id(googleads_service, customer_service) -> list:
+def get_managers(googleads_service, customer_service) -> list:
     # A collection of customer IDs to handle.
     seed_customer_ids = []
     customer_resource_names = (
@@ -32,7 +32,7 @@ def get_manager_id(googleads_service, customer_service) -> list:
     return seed_customer_ids
 
 
-def get_client_id(googleads_service, seed_customer_ids) -> pd.DataFrame:
+def get_clients(googleads_service, seed_customer_ids) -> pd.DataFrame:
     # Creates a query that retrieves all child accounts of the manager
     # specified in search calls below.
     query = """
@@ -97,7 +97,7 @@ def get_client_id(googleads_service, seed_customer_ids) -> pd.DataFrame:
             )
 
     manager_client_map = [
-        (manager_id, client_id)
+        (manager_id, str(client_id))
         for manager_id, client_ids in manager_client_map.items()
         for client_id in client_ids
     ]
