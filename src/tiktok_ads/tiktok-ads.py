@@ -8,11 +8,14 @@ from typing import Optional
 import arrow
 import business_api_client
 import pandas as pd
-import pandas_gbq
 import typer
 from business_api_client.rest import ApiException
 from dotenv import load_dotenv
 from loguru import logger
+from utils.bq_helper import (
+    export_to_parquet,
+    load_data_to_bigquery,
+)
 from utils.schemas import tiktok_schema
 
 load_dotenv()
@@ -109,61 +112,14 @@ def get_report_campaign(
         axis=1,
     )
     combined_df = combined_df[dimensions + metrics]
+    if combined_df.empty:
+        return pd.DataFrame()
     combined_df["stat_time_day"] = pd.to_datetime(combined_df["stat_time_day"])
     combined_df[metrics[4:]] = combined_df[metrics[4:]].apply(
         pd.to_numeric, errors="coerce"
     )
     combined_df = combined_df[combined_df["impressions"] > 0].reset_index(drop=True)
     return combined_df
-
-
-def check_existing_bigquery(df, project_id, table_id) -> pd.DataFrame:
-    # Query existing records from BigQuery
-    query = f"""
-    SELECT stat_time_day, campaign_id
-    FROM `{table_id}`
-    WHERE stat_time_day BETWEEN '{df['stat_time_day'].min().strftime('%Y-%m-%d')}' AND '{df['stat_time_day'].max().strftime('%Y-%m-%d')}'
-    """
-    existing_records = pandas_gbq.read_gbq(
-        query,
-        project_id,
-        dtypes=df.dtypes[:2].to_dict(),
-    )
-
-    # Remove existing records from the DataFrame
-    df_new = df.merge(
-        existing_records,
-        on=["stat_time_day", "campaign_id"],
-        how="left",
-        indicator=True,
-    )
-    df_new = df_new[df_new["_merge"] == "left_only"].drop(columns=["_merge"])
-    return df_new
-
-
-def load_data_to_bigquery(df, project_id, table_id):
-    df = check_existing_bigquery(df, project_id, table_id)
-    # Load data to BigQuery
-    if df.empty:
-        logger.info("No new data to insert into BigQuery")
-        return
-    pandas_gbq.to_gbq(
-        df,
-        table_id,
-        project_id,
-        table_schema=[_.to_api_repr() for _ in tiktok_schema],
-        if_exists="append",
-    )
-    logger.info("Data successfully inserted into BigQuery")
-
-
-def export_to_parquet(df, output_dir: Path):
-    output_dir.mkdir(parents=True, exist_ok=True)
-    file_path = output_dir.joinpath(
-        f"tiktok_report_{arrow.now().format('YYYYMMDD_HHmmss')}.parquet"
-    )
-    df.to_parquet(file_path)
-    logger.info(f"Data successfully exported to {file_path}")
 
 
 @app.command()
@@ -203,8 +159,16 @@ def get_tiktok_report_data(date: Optional[str] = None) -> None:
 
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
-        export_to_parquet(df_final, ROOT_DIR / f"data_lake/tiktok_ads/{month}")
-        load_data_to_bigquery(df_final, bq_project_id, bq_table_id)
+        export_to_parquet(
+            df_final, "tiktok", ROOT_DIR / f"data_lake/tiktok_ads/{month}"
+        )
+        load_data_to_bigquery(
+            df_final,
+            bq_project_id,
+            bq_table_id,
+            tiktok_schema,
+            ("stat_time_day", "campaign_id"),
+        )
     else:
         logger.info("No campaign reports found.")
 
