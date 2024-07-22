@@ -100,6 +100,7 @@ def get_report_campaign(
     if combined_df.empty:
         return pd.DataFrame()
     combined_df["segments_date"] = pd.to_datetime(combined_df["segments_date"])
+    combined_df["segments_date"] = combined_df["segments_date"].astype("dbdate")
     combined_df[["campaign_id", "customer_id"]] = combined_df[
         ["campaign_id", "customer_id"]
     ].astype(str)

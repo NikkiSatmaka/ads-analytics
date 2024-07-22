@@ -115,6 +115,7 @@ def get_report_campaign(
     if combined_df.empty:
         return pd.DataFrame()
     combined_df["stat_time_day"] = pd.to_datetime(combined_df["stat_time_day"])
+    combined_df["stat_time_day"] = combined_df["stat_time_day"].astype("dbdate")
     combined_df[metrics[4:]] = combined_df[metrics[4:]].apply(
         pd.to_numeric, errors="coerce"
     )
