@@ -124,7 +124,9 @@ def get_google_report_data(date: Optional[str] = None) -> None:
     else:
         end_date = arrow.now().floor("day")
         start_date = end_date.shift(days=-1)
-    month = start_date.format("YYYY-MM")
+    year = start_date.format("YYYY")
+    month = start_date.format("MM")
+    day = start_date.format("DD")
 
     # Initialize a GoogleAdsClient instance
     client = GoogleAdsClient.load_from_env()
@@ -154,7 +156,7 @@ def get_google_report_data(date: Optional[str] = None) -> None:
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
         export_to_parquet(
-            df_final, "google", ROOT_DIR / f"data_lake/google_ads/{month}"
+            df_final, "google", ROOT_DIR / f"data_lake/google_ads/{year}/{month}/{day}"
         )
         load_data_to_bigquery(
             df_final,

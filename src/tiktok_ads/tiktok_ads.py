@@ -140,7 +140,9 @@ def get_tiktok_report_data(date: Optional[str] = None) -> None:
     else:
         end_date = arrow.now().floor("day")
         start_date = end_date.shift(days=-1)
-    month = start_date.format("YYYY-MM")
+    year = start_date.format("YYYY")
+    month = start_date.format("MM")
+    day = start_date.format("DD")
 
     advertisers = get_advertisers(app_id, secret, access_token)
     if advertisers.empty:
@@ -161,7 +163,7 @@ def get_tiktok_report_data(date: Optional[str] = None) -> None:
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
         export_to_parquet(
-            df_final, "tiktok", ROOT_DIR / f"data_lake/tiktok_ads/{month}"
+            df_final, "tiktok", ROOT_DIR / f"data_lake/tiktok_ads/{year}/{month}/{day}"
         )
         load_data_to_bigquery(
             df_final,
