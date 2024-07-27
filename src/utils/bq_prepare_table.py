@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from google.cloud import bigquery
 from loguru import logger
+
 from utils.schemas import google_category_lookup_schema, google_schema, tiktok_schema
 
 load_dotenv()
@@ -40,5 +41,5 @@ def prepare_bq_table(table_id, schema, partition_key=None):
 
 if __name__ == "__main__":
     prepare_bq_table(google_category_lookup_table_id, google_category_lookup_schema)
-    prepare_bq_table(google_table_id, google_schema, "segments_date")
+    prepare_bq_table(google_table_id, google_schema, "date")
     prepare_bq_table(tiktok_table_id, tiktok_schema, "stat_time_day")
