@@ -126,7 +126,7 @@ def get_report_campaign(
 
 
 @app.command()
-def get_report(date: str) -> None:
+def get_report(date: str, export: bool = False) -> None:
     app_id = os.getenv("TIKTOK_APP_ID")
     secret = os.getenv("TIKTOK_SECRET")
     access_token = os.getenv("TIKTOK_ACCESS_TOKEN")
@@ -163,9 +163,12 @@ def get_report(date: str) -> None:
 
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
-        export_to_parquet(
-            df_final, "tiktok", ROOT_DIR / f"data_lake/tiktok_ads/{year}/{month}/{day}"
-        )
+        if export:
+            export_to_parquet(
+                df_final,
+                "tiktok",
+                ROOT_DIR / f"data_lake/tiktok_ads/{year}/{month}/{day}",
+            )
         load_data_to_bigquery(
             df_final,
             bq_project_id,

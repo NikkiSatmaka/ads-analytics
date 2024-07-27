@@ -177,7 +177,7 @@ def get_report_campaign(
 
 
 @app.command()
-def get_report(date: str) -> None:
+def get_report(date: str, export: bool = False) -> None:
     bq_project_id = os.getenv("BIGQUERY_PROJECT_ID")
     bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
     bq_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_STAGING_ID")
@@ -225,9 +225,12 @@ def get_report(date: str) -> None:
 
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
-        export_to_parquet(
-            df_final, "google", ROOT_DIR / f"data_lake/google_ads/{year}/{month}/{day}"
-        )
+        if export:
+            export_to_parquet(
+                df_final,
+                "google",
+                ROOT_DIR / f"data_lake/google_ads/{year}/{month}/{day}",
+            )
         load_data_to_bigquery(
             df_final,
             bq_project_id,
