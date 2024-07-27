@@ -7,18 +7,21 @@ from pathlib import Path
 from typing import Optional
 
 import arrow
+import db_dtypes
 import pandas as pd
+import pandas_gbq
 import typer
 from dotenv import load_dotenv
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
+from icecream import ic
 from loguru import logger
 from utils.bq_helper import (
     export_to_parquet,
     load_data_to_bigquery,
 )
 from utils.google_ads_helper import get_clients, get_managers
-from utils.schemas import google_schema
+from utils.schemas import google_dtypes, google_schema
 
 load_dotenv()
 
@@ -52,6 +55,24 @@ QUERY = """
         campaign
     WHERE
         segments.date BETWEEN '{start_date}' AND '{end_date}'
+        AND metrics.impressions > 0
+"""
+
+# Google Ads query
+QUERY_CONVERSION = """
+    SELECT
+        segments.date,
+        campaign.id,
+        segments.conversion_action,
+        segments.conversion_action_category,
+        segments.conversion_action_name,
+        metrics.conversions,
+        metrics.all_conversions,
+        metrics.view_through_conversions
+    FROM
+        campaign
+    WHERE
+        segments.date BETWEEN '{start_date}' AND '{end_date}'
 """
 
 
@@ -62,52 +83,97 @@ def create_query(query, start_date, end_date):
     )
 
 
+def get_category_name(lookup_df, category_enum):
+    return lookup_df[lookup_df["id"] == category_enum]["category_name"].iloc[0]
+
+
+def get_googleads_query_df(
+    client_id, googleads_service, google_category_lookup, query, query_conversion
+) -> pd.DataFrame:
+    response = googleads_service.search(customer_id=client_id, query=query)
+    all_reports = []
+    for row in response:
+        all_reports.append(
+            {
+                "date": row.segments.date,
+                "campaign_id": row.campaign.id,
+                "customer_id": row.customer.id,
+                "campaign_name": row.campaign.name,
+                "currency_code": row.customer.currency_code,
+                "impressions": row.metrics.impressions,
+                "clicks": row.metrics.clicks,
+                "video_views": row.metrics.video_views,
+                "engagements": row.metrics.engagements,
+                "cost_micros": row.metrics.cost_micros,
+                "ctr": row.metrics.ctr,
+                "average_cpc": row.metrics.average_cpc,
+                "absolute_top_impression_percentage": row.metrics.absolute_top_impression_percentage,
+                "top_impression_percentage": row.metrics.top_impression_percentage,
+                "cost_per_conversion": row.metrics.cost_per_conversion,
+            }
+        )
+    response = googleads_service.search(customer_id=client_id, query=query_conversion)
+    all_reports_conversion = []
+    for row in response:
+        all_reports_conversion.append(
+            {
+                "date": row.segments.date,
+                "campaign_id": row.campaign.id,
+                "conversion_action": row.segments.conversion_action,
+                "conversion_action_name": row.segments.conversion_action_name,
+                "conversion_action_category": row.segments.conversion_action_category,
+                "conversions": row.metrics.conversions,
+                "all_conversions": row.metrics.all_conversions,
+                "view_through_conversions": row.metrics.view_through_conversions,
+            }
+        )
+    if not all_reports or not all_reports_conversion:
+        return pd.DataFrame()
+    all_reports = pd.DataFrame(all_reports)
+    all_reports_conversion = pd.DataFrame(all_reports_conversion)
+    all_reports_conversion["conversion_action_category"] = all_reports_conversion[
+        "conversion_action_category"
+    ].apply(lambda x: get_category_name(google_category_lookup, x))
+    all_reports = all_reports.merge(
+        all_reports_conversion,
+        how="outer",
+        on=["date", "campaign_id"],
+    )
+    return all_reports[google_dtypes.keys()]
+
+
 def get_report_campaign(
-    client_id, googleads_service, query, start_date, end_date
+    client_id: str,
+    googleads_service: GoogleAdsClient,
+    google_category_lookup: pd.DataFrame,
+    query: str,
+    query_conversion: str,
+    start_date: str,
+    end_date: str,
 ) -> pd.DataFrame:
     query = create_query(query, start_date, end_date)
+    query_conversion = create_query(query_conversion, start_date, end_date)
     try:
-        response = googleads_service.search(customer_id=client_id, query=query)
-        all_reports = []
-        for row in response:
-            all_reports.append(
-                {
-                    "segments_date": row.segments.date,
-                    "campaign_id": row.campaign.id,
-                    "customer_id": row.customer.id,
-                    "campaign_name": row.campaign.name,
-                    "metrics_impressions": row.metrics.impressions,
-                    "metrics_clicks": row.metrics.clicks,
-                    "metrics_video_views": row.metrics.video_views,
-                    "metrics_conversions": row.metrics.conversions,
-                    "metrics_all_conversions": row.metrics.all_conversions,
-                    "metrics_engagements": row.metrics.engagements,
-                    "customer_currency_code": row.customer.currency_code,
-                    "metrics_cost_micros": row.metrics.cost_micros / 1e6,
-                    "metrics_ctr": row.metrics.ctr,
-                    "metrics_average_cpc": row.metrics.average_cpc / 1e6,
-                    "metrics_absolute_top_impression_percentage": row.metrics.absolute_top_impression_percentage,
-                    "metrics_top_impression_percentage": row.metrics.top_impression_percentage,
-                    "metrics_view_through_conversions": row.metrics.view_through_conversions,
-                    "metrics_cost_per_conversion": row.metrics.cost_per_conversion
-                    / 1e6,
-                }
-            )
+        report_df = get_googleads_query_df(
+            client_id,
+            googleads_service,
+            google_category_lookup,
+            query,
+            query_conversion,
+        )
     except GoogleAdsException as e:
         logger.error(f"Exception when calling GoogleAds API: {e}")
         return pd.DataFrame()
-    combined_df = pd.DataFrame(all_reports)
-    if combined_df.empty:
+    if report_df.empty:
         return pd.DataFrame()
-    combined_df["segments_date"] = pd.to_datetime(combined_df["segments_date"])
-    combined_df["segments_date"] = combined_df["segments_date"].astype("dbdate")
-    combined_df[["campaign_id", "customer_id"]] = combined_df[
+    report_df["date"] = pd.to_datetime(report_df["date"])
+    report_df["date"] = report_df["date"].astype("dbdate")
+    report_df[["campaign_id", "customer_id"]] = report_df[
         ["campaign_id", "customer_id"]
     ].astype(str)
-    combined_df = combined_df[combined_df["metrics_impressions"] > 0].reset_index(
-        drop=True
-    )
-    return combined_df
+    report_df = report_df[report_df["impressions"] > 0].reset_index(drop=True)
+
+    return report_df
 
 
 @app.command()
@@ -116,6 +182,10 @@ def get_report(date: str) -> None:
     bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
     bq_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_STAGING_ID")
     bq_table_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_id}"
+    bq_category_lookup_id = os.getenv("BIGQUERY_TABLE_GOOGLE_CATEGORY_LOOKUP_ID")
+    bq_category_lookup_id = f"{bq_project_id}.{bq_dataset_id}.{bq_category_lookup_id}"
+
+    google_category_lookup = pandas_gbq.read_gbq(bq_category_lookup_id, bq_project_id)
 
     start_date = arrow.get(date, tzinfo="local").floor("day")
     end_date = start_date.ceil("day")
@@ -141,7 +211,9 @@ def get_report(date: str) -> None:
         df_report = get_report_campaign(
             client_id,
             googleads_service,
+            google_category_lookup,
             QUERY,
+            QUERY_CONVERSION,
             start_date.format("YYYY-MM-DD"),
             end_date.format("YYYY-MM-DD"),
         )
@@ -158,11 +230,11 @@ def get_report(date: str) -> None:
             bq_project_id,
             bq_table_id,
             google_schema,
-            ("segments_date", "campaign_id"),
+            ("date", "campaign_id", "conversion_action"),
         )
     else:
         logger.info("No campaign reports found.")
 
 
 if __name__ == "__main__":
-    get_google_report_data()
+    app()
