@@ -111,19 +111,14 @@ def get_report_campaign(
 
 
 @app.command()
-def get_google_report_data(date: Optional[str] = None) -> None:
+def get_report(date: str) -> None:
     bq_project_id = os.getenv("BIGQUERY_PROJECT_ID")
     bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
     bq_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_STAGING_ID")
     bq_table_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_id}"
 
-    # Set the start date and end date for daily run
-    if date is not None:
-        start_date = arrow.get(date, tzinfo="local").floor("day")
-        end_date = start_date.shift(days=+1)
-    else:
-        end_date = arrow.now().floor("day")
-        start_date = end_date.shift(days=-1)
+    start_date = arrow.get(date, tzinfo="local").floor("day")
+    end_date = start_date.ceil("day")
     year = start_date.format("YYYY")
     month = start_date.format("MM")
     day = start_date.format("DD")
