@@ -74,7 +74,13 @@ def get_report_campaign(
     all_reports = []
     while True:
         try:
-            # Create a synchronous report task.  This endpoint can currently return the reporting data of up to 10,000 advertisements. If your number of advertisements exceeds 10,000, please use campaign_ids / adgroup_ids / ad_ids as a filter to obtain the reporting data of all advertisements in batches. Additionally, with CHUNK mode on, up to 20,000 advertisements can be returned. If you use campaign_ids / adgroup_ids / ad_ids as a filter, you can pass in up to 100 IDs at a time. [Reporting Get](https://ads.tiktok.com/marketing_api/docs?id=1740302848100353)
+            # Create a synchronous report task.
+            # This endpoint can currently return the reporting data of up to 10,000 advertisements.
+            # If your number of advertisements exceeds 10,000,
+            # please use campaign_ids / adgroup_ids / ad_ids as a filter to obtain the reporting data of all advertisements in batches.
+            # Additionally, with CHUNK mode on, up to 20,000 advertisements can be returned.
+            # If you use campaign_ids / adgroup_ids / ad_ids as a filter, you can pass in up to 100 IDs at a time.
+            # [Reporting Get](https://ads.tiktok.com/marketing_api/docs?id=1740302848100353)
             api_response = api_instance.report_integrated_get(
                 advertiser_id,
                 "BASIC",
