@@ -142,6 +142,9 @@ def get_report(date: str) -> None:
     month = start_date.format("MM")
     day = start_date.format("DD")
 
+    # prepare log file
+    logger.add(ROOT_DIR / "log/tiktok_ads/report_{time}.log")
+
     advertisers = get_advertisers(app_id, secret, access_token)
     if advertisers.empty:
         logger.error("No advertisers found.")

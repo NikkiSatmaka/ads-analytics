@@ -193,6 +193,9 @@ def get_report(date: str) -> None:
     month = start_date.format("MM")
     day = start_date.format("DD")
 
+    # prepare log file
+    logger.add(ROOT_DIR / "log/google_ads/report_{time}.log")
+
     # Initialize a GoogleAdsClient instance
     client = GoogleAdsClient.load_from_env()
 
