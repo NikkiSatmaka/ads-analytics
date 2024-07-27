@@ -8,6 +8,25 @@ google_category_lookup_schema = [
     bigquery.SchemaField("category_name", "STRING", mode="REQUIRED"),
 ]
 
+tiktok_dtypes = {
+    "date": "dbdate",
+    "campaign_id": str,
+    "advertiser_id": str,
+    "advertiser_name": str,
+    "campaign_name": str,
+    "objective_type": str,
+    "reach": int,
+    "impressions": int,
+    "clicks": int,
+    "video_play_actions": int,
+    "result": int,
+    "checkout": int,
+    "spend": int,
+    "ctr": float,
+    "cpc": float,
+    "cost_per_result": float,
+}
+
 google_dtypes = {
     "date": "dbdate",
     "campaign_id": str,
@@ -59,7 +78,7 @@ google_schema = [
 ]
 
 tiktok_schema = [
-    bigquery.SchemaField("stat_time_day", "DATE", mode="REQUIRED"),
+    bigquery.SchemaField("date", "DATE", mode="REQUIRED"),
     bigquery.SchemaField("campaign_id", "STRING", mode="REQUIRED"),
     bigquery.SchemaField("advertiser_id", "STRING", mode="NULLABLE"),
     bigquery.SchemaField("advertiser_name", "STRING", mode="NULLABLE"),

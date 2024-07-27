@@ -121,6 +121,7 @@ def get_report_campaign(
         pd.to_numeric, errors="coerce"
     )
     combined_df = combined_df[combined_df["impressions"] > 0].reset_index(drop=True)
+    combined_df = combined_df.rename({"stat_time_day": "date"}, axis=1)
     return combined_df
 
 
@@ -167,7 +168,7 @@ def get_report(date: str) -> None:
             bq_project_id,
             bq_table_id,
             tiktok_schema,
-            ("stat_time_day", "campaign_id"),
+            ("date", "campaign_id"),
         )
     else:
         logger.info("No campaign reports found.")

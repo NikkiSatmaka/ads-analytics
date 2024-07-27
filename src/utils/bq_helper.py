@@ -9,7 +9,7 @@ import pandas_gbq
 from dotenv import load_dotenv
 from loguru import logger
 
-from utils.schemas import google_dtypes
+from utils.schemas import google_dtypes, tiktok_dtypes
 
 load_dotenv()
 
@@ -27,6 +27,7 @@ def check_existing_bigquery(
         FROM `{table_id}`
         WHERE {date_key} BETWEEN '{df[date_key].min().strftime('%Y-%m-%d')}' AND '{df[date_key].max().strftime('%Y-%m-%d')}'
         """
+        dtypes = {k: v for k, v in google_dtypes.items() if k in composite_primary_key}
     else:
         date_key, campaign_key = composite_primary_key
         # Query existing records from BigQuery
@@ -35,7 +36,7 @@ def check_existing_bigquery(
         FROM `{table_id}`
         WHERE {date_key} BETWEEN '{df[date_key].min().strftime('%Y-%m-%d')}' AND '{df[date_key].max().strftime('%Y-%m-%d')}'
         """
-    dtypes = {k: v for k, v in google_dtypes.items() if k in composite_primary_key}
+        dtypes = {k: v for k, v in tiktok_dtypes.items() if k in composite_primary_key}
     existing_records = pandas_gbq.read_gbq(
         query,
         project_id,
