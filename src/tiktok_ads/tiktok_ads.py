@@ -125,7 +125,7 @@ def get_report_campaign(
 
 
 @app.command()
-def get_tiktok_report_data(date: str) -> None:
+def get_report(date: str) -> None:
     app_id = os.getenv("TIKTOK_APP_ID")
     secret = os.getenv("TIKTOK_SECRET")
     access_token = os.getenv("TIKTOK_ACCESS_TOKEN")
