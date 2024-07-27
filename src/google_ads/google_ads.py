@@ -17,7 +17,7 @@ from utils.bq_helper import (
     export_to_parquet,
     load_data_to_bigquery,
 )
-from utils.google import get_clients, get_managers
+from utils.google_ads_helper import get_clients, get_managers
 from utils.schemas import google_schema
 
 load_dotenv()
