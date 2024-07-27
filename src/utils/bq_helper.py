@@ -9,6 +9,8 @@ import pandas_gbq
 from dotenv import load_dotenv
 from loguru import logger
 
+from utils.schemas import google_dtypes
+
 load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
@@ -17,27 +19,41 @@ ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 def check_existing_bigquery(
     df, project_id, table_id, composite_primary_key
 ) -> pd.DataFrame:
-    date_key, campaign_key = composite_primary_key
-    # Query existing records from BigQuery
-    query = f"""
-    SELECT {date_key}, {campaign_key}
-    FROM `{table_id}`
-    WHERE {date_key} BETWEEN '{df[date_key].min().strftime('%Y-%m-%d')}' AND '{df[date_key].max().strftime('%Y-%m-%d')}'
-    """
+    if len(composite_primary_key) > 2:
+        date_key, campaign_key, conversion_key = composite_primary_key
+        # Query existing records from BigQuery
+        query = f"""
+        SELECT {date_key}, {campaign_key}, {conversion_key}
+        FROM `{table_id}`
+        WHERE {date_key} BETWEEN '{df[date_key].min().strftime('%Y-%m-%d')}' AND '{df[date_key].max().strftime('%Y-%m-%d')}'
+        """
+    else:
+        date_key, campaign_key = composite_primary_key
+        # Query existing records from BigQuery
+        query = f"""
+        SELECT {date_key}, {campaign_key}
+        FROM `{table_id}`
+        WHERE {date_key} BETWEEN '{df[date_key].min().strftime('%Y-%m-%d')}' AND '{df[date_key].max().strftime('%Y-%m-%d')}'
+        """
+    dtypes = {k: v for k, v in google_dtypes.items() if k in composite_primary_key}
     existing_records = pandas_gbq.read_gbq(
         query,
         project_id,
-        dtypes=df.dtypes[:2].to_dict(),
+        dtypes=dtypes,
     )
+    if existing_records is None:
+        return df
+    if existing_records.empty:
+        return df
     # Remove existing records from the DataFrame
-    df_new = df.merge(
+    df = df.merge(
         existing_records,
-        on=[date_key, campaign_key],
+        on=composite_primary_key,
         how="left",
         indicator=True,
     )
-    df_new = df_new[df_new["_merge"] == "left_only"].drop(columns=["_merge"])
-    return df_new
+    df = df[df["_merge"] == "left_only"].drop(columns=["_merge"])
+    return df
 
 
 def load_data_to_bigquery(df, project_id, table_id, schema, composite_primary_key):
