@@ -180,7 +180,7 @@ def get_report(date: str, export: bool = False) -> None:
             bq_project_id,
             bq_table_id,
             tiktok_schema,
-            ("date", "campaign_id"),
+            ("date", "advertiser_id", "campaign_id"),
         )
     else:
         logger.info("No campaign reports found.")
