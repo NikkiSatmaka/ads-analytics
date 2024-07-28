@@ -6,6 +6,7 @@ authors = ["Nikki Satmaka <30800020+NikkiSatmaka@users.noreply.github.com>"]
 readme = "README.md"
 packages = [
     {include = "google_ads", from = "src"},
+    {include = "tiktok_ads", from = "src"},
     {include = "utils", from = "src"},
     {include = "business_api_client", from = "src/tiktok-business-api-sdk/python_sdk"},
 ]
