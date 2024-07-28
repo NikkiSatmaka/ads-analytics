@@ -8,16 +8,19 @@ from typing import Optional
 import arrow
 import business_api_client
 import db_dtypes
+import numpy as np
 import pandas as pd
+import pandas_gbq
 import typer
 from business_api_client.rest import ApiException
 from dotenv import load_dotenv
+from icecream import ic
 from loguru import logger
 from utils.bq_helper import (
     export_to_parquet,
     load_data_to_bigquery,
 )
-from utils.schemas import tiktok_schema
+from utils.schemas import tiktok_dtypes, tiktok_schema
 
 load_dotenv()
 
@@ -31,6 +34,13 @@ def assert_tiktok_api_response(api_response) -> dict:
     assert "data" in api_response
     assert isinstance(api_response["data"], dict)
     return api_response
+
+
+def fix_campaign_name(lookup_df, campaign_id):
+    campaign_names = lookup_df[lookup_df["campaign_id"] == campaign_id]
+    if campaign_names.empty:
+        return None
+    return campaign_names["standard_campaign_name"].iloc[0]
 
 
 def get_advertisers(app_id, secret, access_token) -> pd.DataFrame:
@@ -49,7 +59,7 @@ def get_advertisers(app_id, secret, access_token) -> pd.DataFrame:
 
 
 def get_report_campaign(
-    advertiser_id, access_token, start_date, end_date
+    advertiser_id, access_token, tiktok_campaign_lookup, start_date, end_date
 ) -> pd.DataFrame:
     api_instance = business_api_client.ReportingApi()
     dimensions = ["stat_time_day", "campaign_id"]
@@ -128,7 +138,15 @@ def get_report_campaign(
     )
     combined_df = combined_df[combined_df["impressions"] > 0].reset_index(drop=True)
     combined_df = combined_df.rename({"stat_time_day": "date"}, axis=1)
-    return combined_df
+    combined_df["standard_campaign_name"] = combined_df["campaign_id"].apply(
+        lambda x: fix_campaign_name(tiktok_campaign_lookup, x)
+    )
+    combined_df["campaign_name"] = np.where(
+        pd.isna(combined_df["standard_campaign_name"]),
+        combined_df["campaign_name"],
+        combined_df["standard_campaign_name"],
+    )
+    return combined_df[tiktok_dtypes.keys()]
 
 
 @app.command()
@@ -140,6 +158,12 @@ def get_report(date: str, export: bool = False) -> None:
     bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
     bq_table_id = os.getenv("BIGQUERY_TABLE_TIKTOK_STAGING_ID")
     bq_table_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_id}"
+    bq_campaign_lookup_id = os.getenv("BIGQUERY_TABLE_TIKTOK_CAMPAIGN_LOOKUP_ID")
+    bq_campaign_lookup_id = f"{bq_project_id}.{bq_dataset_id}.{bq_campaign_lookup_id}"
+
+    tiktok_campaign_lookup = pandas_gbq.read_gbq(bq_campaign_lookup_id, bq_project_id)
+    if tiktok_campaign_lookup is None:
+        return
 
     # Set the start date and end date for daily run
     start_date = arrow.get(date, tzinfo="local").floor("day")
@@ -161,6 +185,7 @@ def get_report(date: str, export: bool = False) -> None:
         df_report = get_report_campaign(
             ads_id,
             access_token,
+            tiktok_campaign_lookup,
             start_date.format("YYYY-MM-DD"),
             end_date.format("YYYY-MM-DD"),
         )
