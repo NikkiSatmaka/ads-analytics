@@ -7,4 +7,4 @@ script="main.py"
 # setup dir variables
 project_dir="$(dirname "$(dirname "$(realpath "$0")")")"
 
-"$project_dir/.venv/bin/python" $script tiktok report get-report "$date"
+"$project_dir/.venv/bin/python" "$project_dir/$script"  tiktok report get-report "$date"
