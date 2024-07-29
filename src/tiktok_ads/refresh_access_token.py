@@ -5,14 +5,19 @@ import os
 from pprint import pprint
 
 import business_api_client
+import typer
 from business_api_client.rest import ApiException
+from cmk_ads.config import Config
 
-auth_code = os.getenv("TIKTOK_AUTH_CODE")
-app_id = os.getenv("TIKTOK_APP_ID")
-secret = os.getenv("TIKTOK_SECRET")
+app = typer.Typer(help="Refresh Tiktok Ads Access Token")
 
 
-def app():
+@app.command()
+def refresh_access_token():
+    auth_code = Config().TIKTOK_AUTH_CODE
+    app_id = Config().TIKTOK_APP_ID
+    secret = Config().TIKTOK_SECRET
+
     api_instance = business_api_client.AuthenticationApi()
     body = business_api_client.Oauth2AccessTokenBody(
         auth_code=auth_code,
