@@ -211,7 +211,11 @@ def get_report_campaign_conversion(
 
 
 @app.command()
-def get_report(date: str, export: bool = False) -> None:
+def get_report(
+    date: str,
+    export: bool = False,
+    dry_run: bool = False,
+) -> None:
     bq_project_id = Config().BIGQUERY_PROJECT_ID
     bq_dataset_id = Config().BIGQUERY_DATASET_ID
     bq_table_id = Config().BIGQUERY_TABLE_GOOGLE_STAGING_ID
@@ -233,6 +237,8 @@ def get_report(date: str, export: bool = False) -> None:
 
     # prepare log file
     logger.add(ROOT_DIR / "log/google_ads/report_{time}.log")
+
+    logger.info(f"Getting Google Report for {start_date.format('YYYY-MM-DD')}")
 
     # Initialize a GoogleAdsClient instance
     client = GoogleAdsClient.load_from_env()
@@ -269,6 +275,10 @@ def get_report(date: str, export: bool = False) -> None:
         )
         if not df_report_conversion.empty:
             conversion_reports.append(df_report_conversion)
+
+    if dry_run:
+        logger.info("Dry running. Not making any changes")
+        return
 
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)

@@ -151,7 +151,11 @@ def get_report_campaign(
 
 
 @app.command()
-def get_report(date: str, export: bool = False) -> None:
+def get_report(
+    date: str,
+    export: bool = False,
+    dry_run: bool = False,
+) -> None:
     app_id = Config().TIKTOK_APP_ID
     secret = Config().TIKTOK_SECRET
     access_token = Config().TIKTOK_ACCESS_TOKEN
@@ -176,6 +180,8 @@ def get_report(date: str, export: bool = False) -> None:
     # prepare log file
     logger.add(ROOT_DIR / "log/tiktok_ads/report_{time}.log")
 
+    logger.info(f"Getting Tiktok Report for {start_date.format('YYYY-MM-DD')}")
+
     advertisers = get_advertisers(app_id, secret, access_token)
     if advertisers.empty:
         logger.error("No advertisers found.")
@@ -192,6 +198,10 @@ def get_report(date: str, export: bool = False) -> None:
         )
         if not df_report.empty:
             campaign_reports.append(df_report)
+
+    if dry_run:
+        logger.info("Dry running. Not making any changes")
+        return
 
     if campaign_reports:
         df_final = pd.concat(campaign_reports, axis=0)
