@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pandas_gbq
 import typer
+from cmk_ads.config import Config
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 from icecream import ic
@@ -211,13 +212,13 @@ def get_report_campaign_conversion(
 
 @app.command()
 def get_report(date: str, export: bool = False) -> None:
-    bq_project_id = os.getenv("BIGQUERY_PROJECT_ID")
-    bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
-    bq_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_STAGING_ID")
+    bq_project_id = Config().BIGQUERY_PROJECT_ID
+    bq_dataset_id = Config().BIGQUERY_DATASET_ID
+    bq_table_id = Config().BIGQUERY_TABLE_GOOGLE_STAGING_ID
     bq_table_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_id}"
-    bq_table_conversion_id = os.getenv("BIGQUERY_TABLE_GOOGLE_CONVERSION_STAGING_ID")
+    bq_table_conversion_id = Config().BIGQUERY_TABLE_GOOGLE_CONVERSION_STAGING_ID
     bq_table_conversion_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_conversion_id}"
-    bq_category_lookup_id = os.getenv("BIGQUERY_TABLE_GOOGLE_CATEGORY_LOOKUP_ID")
+    bq_category_lookup_id = Config().BIGQUERY_TABLE_GOOGLE_CATEGORY_LOOKUP_ID
     bq_category_lookup_id = f"{bq_project_id}.{bq_dataset_id}.{bq_category_lookup_id}"
 
     google_category_lookup = pandas_gbq.read_gbq(bq_category_lookup_id, bq_project_id)

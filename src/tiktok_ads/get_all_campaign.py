@@ -11,6 +11,7 @@ import business_api_client
 import pandas as pd
 import pyspark
 from business_api_client.rest import ApiException
+from cmk_ads.config import Config
 from dotenv import load_dotenv
 from google.cloud import bigquery
 from google.oauth2 import service_account
@@ -108,9 +109,9 @@ def get_report_campaign(advertiser_id) -> pd.DataFrame:
 
 
 def main():
-    app_id = os.getenv("TIKTOK_APP_ID")
-    secret = os.getenv("TIKTOK_SECRET")
-    access_token = os.getenv("TIKTOK_ACCESS_TOKEN")
+    app_id = Config().TIKTOK_APP_ID
+    secret = Config().TIKTOK_SECRET
+    access_token = Config().TIKTOK_ACCESS_TOKEN
 
     advertisers = get_advertisers(app_id, secret, access_token)
     campaign_reports = []

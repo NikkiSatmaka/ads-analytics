@@ -13,6 +13,7 @@ import pandas as pd
 import pandas_gbq
 import typer
 from business_api_client.rest import ApiException
+from cmk_ads.config import Config
 from dotenv import load_dotenv
 from icecream import ic
 from loguru import logger
@@ -151,14 +152,14 @@ def get_report_campaign(
 
 @app.command()
 def get_report(date: str, export: bool = False) -> None:
-    app_id = os.getenv("TIKTOK_APP_ID")
-    secret = os.getenv("TIKTOK_SECRET")
-    access_token = os.getenv("TIKTOK_ACCESS_TOKEN")
-    bq_project_id = os.getenv("BIGQUERY_PROJECT_ID")
-    bq_dataset_id = os.getenv("BIGQUERY_DATASET_ID")
-    bq_table_id = os.getenv("BIGQUERY_TABLE_TIKTOK_STAGING_ID")
+    app_id = Config().TIKTOK_APP_ID
+    secret = Config().TIKTOK_SECRET
+    access_token = Config().TIKTOK_ACCESS_TOKEN
+    bq_project_id = Config().BIGQUERY_PROJECT_ID
+    bq_dataset_id = Config().BIGQUERY_DATASET_ID
+    bq_table_id = Config().BIGQUERY_TABLE_TIKTOK_STAGING_ID
     bq_table_id = f"{bq_project_id}.{bq_dataset_id}.{bq_table_id}"
-    bq_campaign_lookup_id = os.getenv("BIGQUERY_TABLE_TIKTOK_CAMPAIGN_LOOKUP_ID")
+    bq_campaign_lookup_id = Config().BIGQUERY_TABLE_TIKTOK_CAMPAIGN_LOOKUP_ID
     bq_campaign_lookup_id = f"{bq_project_id}.{bq_dataset_id}.{bq_campaign_lookup_id}"
 
     tiktok_campaign_lookup = pandas_gbq.read_gbq(bq_campaign_lookup_id, bq_project_id)

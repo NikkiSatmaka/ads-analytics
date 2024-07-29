@@ -3,6 +3,7 @@
 
 import os
 
+from cmk_ads.config import Config
 from google.cloud import bigquery
 from loguru import logger
 
@@ -13,16 +14,16 @@ from utils.schemas import (
     tiktok_schema,
 )
 
-tiktok_table_id = os.getenv("BIGQUERY_TABLE_TIKTOK_STAGING_ID")
-google_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_STAGING_ID")
-google_conversion_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_CONVERSION_STAGING_ID")
-google_category_lookup_table_id = os.getenv("BIGQUERY_TABLE_GOOGLE_CATEGORY_LOOKUP_ID")
+tiktok_table_id = Config().BIGQUERY_TABLE_TIKTOK_STAGING_ID
+google_table_id = Config().BIGQUERY_TABLE_GOOGLE_STAGING_ID
+google_conversion_table_id = Config().BIGQUERY_TABLE_GOOGLE_CONVERSION_STAGING_ID
+google_category_lookup_table_id = Config().BIGQUERY_TABLE_GOOGLE_CATEGORY_LOOKUP_ID
 
 
 def prepare_bq_table(table_id, schema, partition_key=None):
     # Set variables from environment
-    project_id = os.getenv("BIGQUERY_PROJECT_ID")
-    dataset_id = os.getenv("BIGQUERY_DATASET_ID")
+    project_id = Config().BIGQUERY_PROJECT_ID
+    dataset_id = Config().BIGQUERY_DATASET_ID
 
     # Create BigQuery client
     client = bigquery.Client(project_id)
