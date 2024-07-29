@@ -9,7 +9,6 @@ from pathlib import Path
 import arrow
 import business_api_client
 import pandas as pd
-import pyspark
 from business_api_client.rest import ApiException
 from cmk_ads.config import Config
 from dotenv import load_dotenv
@@ -17,15 +16,10 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 from icecream import ic
 from loguru import logger
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
 
 load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
-
-spark = SparkSession.builder.master("local[*]").appName("test").getOrCreate()
 
 
 def assert_tiktok_api_response(api_response):
@@ -123,7 +117,6 @@ def main():
             logger.error(ads_id)
 
     df_report = pd.concat(campaign_reports, axis=0)
-    df_report = spark.createDataFrame(df_report)
 
 
 if __name__ == "__main__":
