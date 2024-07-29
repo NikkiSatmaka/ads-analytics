@@ -12,6 +12,7 @@ import pandas as pd
 import pandas_gbq
 import typer
 from cmk_ads.config import Config
+from dotenv import load_dotenv
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 from icecream import ic
@@ -27,6 +28,8 @@ from utils.schemas import (
     google_dtypes,
     google_schema,
 )
+
+load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 
