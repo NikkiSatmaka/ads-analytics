@@ -11,13 +11,10 @@ import business_api_client
 import pandas as pd
 from business_api_client.rest import ApiException
 from cmk_ads.config import Config
-from dotenv import load_dotenv
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from icecream import ic
 from loguru import logger
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 

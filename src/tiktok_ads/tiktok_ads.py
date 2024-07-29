@@ -14,7 +14,6 @@ import pandas_gbq
 import typer
 from business_api_client.rest import ApiException
 from cmk_ads.config import Config
-from dotenv import load_dotenv
 from icecream import ic
 from loguru import logger
 from utils.bq_helper import (
@@ -22,8 +21,6 @@ from utils.bq_helper import (
     load_data_to_bigquery,
 )
 from utils.schemas import tiktok_dtypes, tiktok_schema
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 

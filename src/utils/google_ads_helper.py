@@ -9,11 +9,8 @@ from pathlib import Path
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
-
-load_dotenv()
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent
 
